@@ -1,11 +1,14 @@
 package com.gromyk.carworkshops;
 
+import com.gromyk.carworkshops.domain.CreateAppointmentUseCase;
 import com.gromyk.carworkshops.persistence.entities.Appointment;
 import com.gromyk.carworkshops.persistence.entities.Service;
 import com.gromyk.carworkshops.persistence.entities.Workshop;
 import com.gromyk.carworkshops.persistence.repository.AppointmentsRepository;
 import com.gromyk.carworkshops.persistence.repository.ServicesRepository;
 import com.gromyk.carworkshops.persistence.repository.WorkshopsRepository;
+import com.gromyk.carworkshops.rest.dtos.AppointmentRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ResourceUtils;
@@ -13,6 +16,7 @@ import org.springframework.util.ResourceUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,23 +28,26 @@ public class ImportCSVRunner implements CommandLineRunner {
     private final WorkshopsRepository workshopsRepository;
     private final ServicesRepository servicesRepository;
 
-    public ImportCSVRunner(AppointmentsRepository appointmentsRepository, WorkshopsRepository workshopsRepository, ServicesRepository servicesRepository) {
+    private final CreateAppointmentUseCase createAppointmentUseCase;
+
+    @Autowired
+    public ImportCSVRunner(AppointmentsRepository appointmentsRepository, WorkshopsRepository workshopsRepository, ServicesRepository servicesRepository, CreateAppointmentUseCase createAppointmentUseCase) {
         this.appointmentsRepository = appointmentsRepository;
         this.workshopsRepository = workshopsRepository;
         this.servicesRepository = servicesRepository;
+        this.createAppointmentUseCase = createAppointmentUseCase;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        appointmentsRepository.saveAll(readAppointmentsFromResources());
+        readAppointmentsFromResources();
     }
 
-    private List<Appointment> readAppointmentsFromResources() {
-        List<Appointment> appointments = new ArrayList<>();
-        Workshop schmidt = workshopsRepository.save(new Workshop("schmidt", "Autohaus-Schmidt", "autohaus-schmidt auf der Strasse...", 2));
-        Workshop bachstrasse = workshopsRepository.save(new Workshop("bachstrasse", "Meisterbetrieb-Bachstraße", "Meisterbetrieb auf der Bachstrasse...", 3));
+    private void readAppointmentsFromResources() {
+        Workshop schmidt = workshopsRepository.save(new Workshop("schmidt", "Autohaus-Schmidt", "autohaus-schmidt auf der Strasse...", 2, LocalTime.of(8, 0), LocalTime.of(19, 0)));
+        Workshop bachstrasse = workshopsRepository.save(new Workshop("bachstrasse", "Meisterbetrieb-Bachstraße", "Meisterbetrieb auf der Bachstrasse...", 3, LocalTime.of(8, 0), LocalTime.of(20, 0)));
 
-        Service oilChangeSchmidt = new Service("MOT", "Motorinstandsetzung", 4*60, schmidt);
+        Service oilChangeSchmidt = new Service("MOT", "Motorinstandsetzung", 4 * 60, schmidt);
         Service metalRepairSchmidt = new Service("OIL", "Ölwechsel", 15, schmidt);
         Service generalInspectionSchmidt = new Service("WHE", "Radwechsel", 30, schmidt);
         servicesRepository.save(oilChangeSchmidt);
@@ -54,14 +61,11 @@ public class ImportCSVRunner implements CommandLineRunner {
         servicesRepository.save(metalRepairBachstrasse);
         servicesRepository.save(generalInspectionBachstrasse);
 
-        appointments.addAll(readFile("classpath:autohaus-schmidt.csv", schmidt));
-        appointments.addAll(readFile("classpath:meisterbetrieb-bachstraße.csv", bachstrasse));
-
-
-        return appointments;
+//        importFile("classpath:autohaus-schmidt.csv", schmidt);
+//        importFile("classpath:meisterbetrieb-bachstraße.csv", bachstrasse);
     }
 
-    private List<Appointment> readFile(String fileName, Workshop workshop) {
+    private void importFile(String fileName, Workshop workshop) {
         List<Appointment> appointments = new ArrayList<>();
         try {
             File workshopFile = ResourceUtils.getFile(fileName);
@@ -74,17 +78,13 @@ public class ImportCSVRunner implements CommandLineRunner {
                 String[] values = record.split(",");
                 System.out.println(record);
 
-                Appointment appointment = new Appointment();
+                AppointmentRequest appointment = new AppointmentRequest();
                 appointment.setStartTime(LocalDateTime.parse(values[0], DateTimeFormatter.ISO_ZONED_DATE_TIME));
-                appointment.setService(servicesRepository.findByWorkshopAndServiceName(workshop, values[1]));
-                appointment.setWorkshopName(workshop.getName());
-                appointments.add(appointment);
+                appointment.setServiceId(values[1]);
+                createAppointmentUseCase.createAppointment(workshop.getId(), appointment);
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
-
-
-        return appointments;
     }
 }

@@ -1,38 +1,16 @@
-package com.gromyk.carworkshops.persistence.entities;
+package com.gromyk.carworkshops.domain.entities;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import java.sql.Time;
 import java.time.LocalTime;
-import java.util.List;
 
-@Entity
-@Table(name = "workshops")
-public class Workshop {
-    @Id
+public class WorkshopSave {
     private String id;
     private String name;
     private String description;
     private int maximumParallelServices;
-
-    @OneToMany(mappedBy = "workshop")
-    private List<Service> services;
-
     LocalTime startOfADay;
     LocalTime endOfADay;
 
-    public Workshop() {
-    }
-
-    public Workshop(String id, String name, String description, int maximumParallelServices, LocalTime startOfADay, LocalTime endOfADay) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.maximumParallelServices = maximumParallelServices;
-        this.startOfADay = startOfADay;
-        this.endOfADay = endOfADay;
+    public WorkshopSave() {
     }
 
     public String getId() {
@@ -65,14 +43,6 @@ public class Workshop {
 
     public void setMaximumParallelServices(int maximumParallelServices) {
         this.maximumParallelServices = maximumParallelServices;
-    }
-
-    public List<Service> getServices() {
-        return services;
-    }
-
-    public void setServices(List<Service> services) {
-        this.services = services;
     }
 
     public LocalTime getStartOfADay() {

@@ -14,18 +14,18 @@ public class Appointment {
     private LocalDateTime startTime;
     @Column(name = "endTime", columnDefinition = "TIMESTAMP")
     private LocalDateTime endTime;
-    private String workshopName;
+    private String workshopId;
     @ManyToOne
     private Service serviceToDo;
 
     public Appointment() {
     }
 
-    public Appointment(Long id, LocalDateTime start, LocalDateTime endTime, String workshopName, Service service) {
+    public Appointment(Long id, LocalDateTime start, LocalDateTime endTime, String workshopId, Service service) {
         this.id = id;
         this.startTime = start;
         this.endTime = endTime;
-        this.workshopName = workshopName;
+        this.workshopId = workshopId;
         this.serviceToDo = service;
     }
 
@@ -53,12 +53,20 @@ public class Appointment {
         this.endTime = end;
     }
 
-    public String getWorkshopName() {
-        return workshopName;
+    public String getWorkshopId() {
+        return workshopId;
     }
 
-    public void setWorkshopName(String workshopName) {
-        this.workshopName = workshopName;
+    public void setWorkshopId(String workshopId) {
+        this.workshopId = workshopId;
+    }
+
+    public Service getServiceToDo() {
+        return serviceToDo;
+    }
+
+    public void setServiceToDo(Service serviceToDo) {
+        this.serviceToDo = serviceToDo;
     }
 
     public Service getService() {

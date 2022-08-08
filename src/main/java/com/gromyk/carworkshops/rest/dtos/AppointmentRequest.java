@@ -6,8 +6,8 @@ import com.gromyk.carworkshops.DateHelper;
 
 import java.time.LocalDateTime;
 
-public class AppointmentSuggestion {
-    @JsonProperty("vom")
+public class AppointmentRequest {
+    @JsonProperty("von")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DateHelper.DATE_FORMAT)
     private LocalDateTime startTime;
     @JsonProperty("bis")
@@ -16,7 +16,7 @@ public class AppointmentSuggestion {
     @JsonProperty("leistungsId")
     private String serviceId;
 
-    public AppointmentSuggestion() {
+    public AppointmentRequest() {
     }
 
     public LocalDateTime getStartTime() {
