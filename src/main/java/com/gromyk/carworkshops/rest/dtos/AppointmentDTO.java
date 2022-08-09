@@ -1,24 +1,27 @@
 package com.gromyk.carworkshops.rest.dtos;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.gromyk.carworkshops.persistence.entities.Service;
+import com.gromyk.carworkshops.DateHelper;
+import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 
-public class AppointmentResponse {
+public class AppointmentDTO {
     @JsonProperty("id")
     private Long id;
     @JsonProperty("von")
+    @JsonFormat(pattern = DateHelper.DATE_FORMAT)
     private LocalDateTime startTime;
     @JsonProperty("bis")
+    @JsonFormat(pattern = DateHelper.DATE_FORMAT)
     private LocalDateTime endTime;
-    @JsonProperty("werkstattIs")
+    @JsonProperty("werkstattId")
     private String workshopId;
-    @JsonProperty("leistungId")
+    @JsonProperty("leistungCode")
     private String serviceCode;
 
-    public AppointmentResponse() {
+    public AppointmentDTO() {
     }
 
     public Long getId() {

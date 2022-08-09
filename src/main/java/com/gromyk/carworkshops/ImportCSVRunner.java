@@ -1,6 +1,7 @@
 package com.gromyk.carworkshops;
 
 import com.gromyk.carworkshops.domain.CreateAppointmentUseCase;
+import com.gromyk.carworkshops.domain.exceptions.TimeConflictException;
 import com.gromyk.carworkshops.persistence.entities.Appointment;
 import com.gromyk.carworkshops.persistence.entities.Service;
 import com.gromyk.carworkshops.persistence.entities.Workshop;
@@ -61,8 +62,8 @@ public class ImportCSVRunner implements CommandLineRunner {
         servicesRepository.save(metalRepairBachstrasse);
         servicesRepository.save(generalInspectionBachstrasse);
 
-//        importFile("classpath:autohaus-schmidt.csv", schmidt);
-//        importFile("classpath:meisterbetrieb-bachstraße.csv", bachstrasse);
+        importFile("classpath:autohaus-schmidt.csv", schmidt);
+        importFile("classpath:meisterbetrieb-bachstraße.csv", bachstrasse);
     }
 
     private void importFile(String fileName, Workshop workshop) {
@@ -81,7 +82,11 @@ public class ImportCSVRunner implements CommandLineRunner {
                 AppointmentRequest appointment = new AppointmentRequest();
                 appointment.setStartTime(LocalDateTime.parse(values[0], DateTimeFormatter.ISO_ZONED_DATE_TIME));
                 appointment.setServiceId(values[1]);
-                createAppointmentUseCase.createAppointment(workshop.getId(), appointment);
+                try {
+                    createAppointmentUseCase.createAppointment(workshop.getId(), appointment);
+                } catch (TimeConflictException exception) {
+                    System.out.println("The appointment skipped cause of a time conflict!");
+                }
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);

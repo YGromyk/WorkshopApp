@@ -1,17 +1,20 @@
 package com.gromyk.carworkshops.rest.dtos;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.gromyk.carworkshops.DateHelper;
 
 import java.time.LocalDateTime;
 
 public class AppointmentRecommendation {
-
     @JsonProperty("von")
+    @JsonFormat(pattern = DateHelper.DATE_FORMAT)
     private LocalDateTime startTime;
     @JsonProperty("bis")
+    @JsonFormat(pattern = DateHelper.DATE_FORMAT)
     private LocalDateTime endTime;
     @JsonProperty("werkstattName")
-    private String workshopName;
+    private String workshop;
     @JsonProperty("leistungId")
     private String serviceCode;
     @JsonProperty("leistung")
@@ -36,12 +39,12 @@ public class AppointmentRecommendation {
         this.endTime = endTime;
     }
 
-    public String getWorkshopName() {
-        return workshopName;
+    public String getWorkshop() {
+        return workshop;
     }
 
-    public void setWorkshopName(String workshopName) {
-        this.workshopName = workshopName;
+    public void setWorkshop(String workshop) {
+        this.workshop = workshop;
     }
 
     public String getServiceCode() {

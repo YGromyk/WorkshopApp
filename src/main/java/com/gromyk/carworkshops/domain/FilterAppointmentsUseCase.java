@@ -4,12 +4,13 @@ import com.gromyk.carworkshops.persistence.entities.Appointment;
 import com.gromyk.carworkshops.persistence.repository.AppointmentsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Component
+@Service
 public class FilterAppointmentsUseCase {
     private final AppointmentsRepository appointmentsRepository;
 

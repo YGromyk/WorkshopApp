@@ -7,7 +7,8 @@ import com.gromyk.carworkshops.persistence.entities.Appointment;
 import com.gromyk.carworkshops.persistence.repository.AppointmentsRepository;
 import com.gromyk.carworkshops.rest.dtos.AppointmentRecommendation;
 import com.gromyk.carworkshops.rest.dtos.AppointmentRequest;
-import com.gromyk.carworkshops.rest.dtos.AppointmentResponse;
+import com.gromyk.carworkshops.rest.dtos.AppointmentDTO;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
@@ -21,39 +22,44 @@ public class AppointmentController {
     private final AppointmentsRepository repository;
     private final FilterAppointmentsUseCase filterAppointmentsUseCase;
     private final CreateAppointmentUseCase createAppointmentUseCase;
+    private final ModelMapper modelMapper;
 
     @Autowired
-    public AppointmentController(AppointmentsRepository repository, FilterAppointmentsUseCase filterAppointmentsUseCase, CreateAppointmentUseCase createAppointmentUseCase) {
+    public AppointmentController(AppointmentsRepository repository, FilterAppointmentsUseCase filterAppointmentsUseCase, CreateAppointmentUseCase createAppointmentUseCase, ModelMapper modelMapper) {
         this.repository = repository;
         this.filterAppointmentsUseCase = filterAppointmentsUseCase;
         this.createAppointmentUseCase = createAppointmentUseCase;
-    }
-
-    @RequestMapping(value = "/termins", produces = MediaType.APPLICATION_JSON_VALUE)
-    List<String> getAppointments() {
-        return repository.findAll().stream().map(it -> it.getService() + " in " + it.getWorkshopId()).toList();
+        this.modelMapper = modelMapper;
     }
 
     @RequestMapping(value = "/werkstatt/{workshopId}/termin", consumes = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
-    public @ResponseBody AppointmentResponse createAppointment(
+    public @ResponseBody AppointmentDTO createAppointment(
             @PathVariable(value = "workshopId") String workshopId,
             @RequestBody AppointmentRequest appointmentRequest
     ) {
-        return mapToResponse(createAppointmentUseCase.createAppointment(workshopId, appointmentRequest));
+        return getAppointmentDTO(createAppointmentUseCase.createAppointment(workshopId, appointmentRequest));
     }
 
     @RequestMapping(value = "/werkstatt/{workshopId}/termine", method = RequestMethod.GET)
-    public List<AppointmentResponse> getAllAppointmentsFor(
+    public List<AppointmentDTO> getAllAppointmentsFor(
             @PathVariable(value = "workshopId") String workshop,
             @RequestParam(name = "leistungId", required = false) String serviceId,
             @RequestParam(name = "von", required = false) @DateTimeFormat(pattern = DateHelper.DATE_FORMAT) LocalDateTime fromTime,
             @RequestParam(name = "bis", required = false) @DateTimeFormat(pattern = DateHelper.DATE_FORMAT) LocalDateTime untilTime
     ) {
-        return filterAppointmentsUseCase.run(workshop, serviceId, fromTime, untilTime).stream().map(it -> mapToResponse(it)).toList();
+        return filterAppointmentsUseCase.run(workshop, serviceId, fromTime, untilTime).stream()
+                .map(this::getAppointmentDTO)
+                .toList();
+    }
+
+    private AppointmentDTO getAppointmentDTO(Appointment it) {
+        AppointmentDTO mapped = modelMapper.map(it, AppointmentDTO.class);
+        mapped.setServiceCode(it.getServiceToDo().getServiceName());
+        return mapped;
     }
 
     @RequestMapping(value = "/werkstatt/{workshopId}/termin/{terminId}", method = RequestMethod.GET)
-    public AppointmentResponse remove(
+    public AppointmentDTO remove(
             @PathVariable(value = "workshopId") String workshop,
             @PathVariable(value = "terminId") Long appointmentId
 
@@ -62,39 +68,25 @@ public class AppointmentController {
         if (appointmentToRemove.getWorkshopId().equals(workshop)) {
             repository.delete(appointmentToRemove);
         }
-        return mapToResponse(appointmentToRemove);
+        return getAppointmentDTO(appointmentToRemove);
     }
 
-    @RequestMapping(value = "/werkstatt/{workshopId}/terminvorschlag", method = RequestMethod.GET)
+    @RequestMapping(value = "/werkstatt/{workshopId}/terminvorschlag", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<AppointmentRecommendation> getRecommendations(
             @PathVariable(value = "workshopId") String workshop,
             @RequestParam(name = "leistungId", required = false) String serviceId,
-            @RequestParam(name = "von", required = false) @DateTimeFormat(pattern = DateHelper.DATE_FORMAT) LocalDateTime fromTime,
-            @RequestParam(name = "bis", required = false) @DateTimeFormat(pattern = DateHelper.DATE_FORMAT) LocalDateTime untilTime
+            @RequestParam(name = "von", required = false)
+            @DateTimeFormat(pattern = DateHelper.DATE_FORMAT) LocalDateTime fromTime,
+            @RequestParam(name = "bis", required = false)
+            @DateTimeFormat(pattern = DateHelper.DATE_FORMAT) LocalDateTime untilTime
     ) {
-        return createAppointmentUseCase.getRecommendation(workshop, serviceId, fromTime, untilTime).stream().map(AppointmentController::mapToRecommendation).toList();
+        return createAppointmentUseCase.getRecommendation(workshop, serviceId, fromTime, untilTime).stream()
+                .map(it -> {
+                    AppointmentRecommendation mapped = modelMapper.map(it, AppointmentRecommendation.class);
+                    mapped.setServiceCode(it.getService().getServiceName());
+                    mapped.setService(it.getService().getDescription());
+                    return mapped;
+                })
+                .toList();
     }
-
-
-    private static AppointmentResponse mapToResponse(Appointment it) {
-        AppointmentResponse appointmentResponse = new AppointmentResponse();
-        appointmentResponse.setId(it.getId());
-        appointmentResponse.setServiceCode(it.getServiceToDo().getServiceName());
-        appointmentResponse.setWorkshopId(it.getWorkshopId());
-        appointmentResponse.setStartTime(it.getStartTime());
-        appointmentResponse.setEndTime(it.getEndTime());
-        return appointmentResponse;
-    }
-
-    private static AppointmentRecommendation mapToRecommendation(Appointment it) {
-        AppointmentRecommendation appointmentResponse = new AppointmentRecommendation();
-        appointmentResponse.setServiceCode(it.getServiceToDo().getServiceName());
-        appointmentResponse.setWorkshopName(it.getWorkshopId());
-        appointmentResponse.setService(it.getService().getDescription());
-        appointmentResponse.setStartTime(it.getStartTime());
-        appointmentResponse.setEndTime(it.getEndTime());
-        return appointmentResponse;
-    }
-
-
 }

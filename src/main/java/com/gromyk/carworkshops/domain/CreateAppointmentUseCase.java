@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Component
+@org.springframework.stereotype.Service
 public class CreateAppointmentUseCase {
     private final AppointmentsRepository appointmentsRepository;
     private final ServicesRepository servicesRepository;
@@ -44,21 +44,11 @@ public class CreateAppointmentUseCase {
         return appointmentsRepository.save(appointmentToCreate);
     }
 
-    private boolean extracted(Workshop workshop, List<Appointment> appointmentsAfter, Appointment appointmentToCreate) {
-        LocalTime appointmentStartTime = appointmentToCreate.getStartTime().toLocalTime();
-        LocalTime appointmentEndTime = appointmentToCreate.getEndTime().toLocalTime();
-        boolean timeIsSameOrAfter = workshop.getStartOfADay().isBefore(appointmentStartTime) || workshop.getStartOfADay().equals(appointmentStartTime);
-        boolean timeIsBeforeEndOfDay = workshop.getEndOfADay().isAfter(appointmentEndTime);
-        return timeIsSameOrAfter || timeIsBeforeEndOfDay;
-
-    }
-
     private boolean isNotOverloaded(Workshop workshop, Appointment appointmentToCreate) {
         List<Appointment> appointmentsAfter = appointmentsRepository.findByWorkshopId(workshop.getId());
         return findParallelAppointments(appointmentsAfter, workshop.getMaximumParallelServices(), appointmentToCreate);
 
     }
-
 
     private Appointment fillUpAppointment(Workshop workshop, AppointmentRequest appointmentRequest) {
         Service service = servicesRepository.findByWorkshopAndServiceName(workshop, appointmentRequest.getServiceId());
@@ -114,6 +104,20 @@ public class CreateAppointmentUseCase {
 
     public List<Appointment> getRecommendation(String workshopId, String serviceId, LocalDateTime from, LocalDateTime to) {
         Workshop workshop = workshopsRepository.findById(workshopId).orElseThrow(() -> new IllegalArgumentException("Wrong workshop id"));
+
+        // adjust time here, instead using SpEl
+        if (from == null) {
+            from = LocalDateTime.now();
+        }
+        if (to == null) {
+            to = from.withHour(workshop.getEndOfADay().getHour());
+            to = to.withMinute(workshop.getEndOfADay().getMinute());
+        }
+        if (isTimeOutBusinessHours(from.toLocalTime(), to.toLocalTime(), workshop)) {
+            from = from.withHour(workshop.getStartOfADay().getHour());
+            from = from.withMinute(workshop.getStartOfADay().getMinute());
+        }
+
         Service service = servicesRepository.findByWorkshopAndServiceName(workshop, serviceId);
         return generateAppointments(workshop, service, from, to);
     }
@@ -127,10 +131,13 @@ public class CreateAppointmentUseCase {
             appointmentRequest.setServiceId(service.getServiceName());
             appointmentRequest.setStartTime(tempDate);
             Appointment appointment = fillUpAppointment(workshop, appointmentRequest);
-            if (appointment.getEndTime().isAfter(to))
-                break;
 
-            boolean isOutOfBusinessHours = isTimeOutBusinessHours(appointment.getStartTime().toLocalTime(), appointment.getEndTime().toLocalTime(), workshop);
+            if (appointment.getEndTime().isAfter(to)) break;
+
+            LocalTime startTime = appointment.getStartTime().toLocalTime();
+            LocalTime endTime = appointment.getEndTime().toLocalTime();
+
+            boolean isOutOfBusinessHours = isTimeOutBusinessHours(startTime, endTime, workshop);
             if (isNotOverloaded(workshop, appointment) && !isOutOfBusinessHours) {
                 appointmentRequests.add(appointment);
             }
