@@ -17,4 +17,15 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         ApiError apiError = new ApiError(HttpStatus.CONFLICT, exception.getMessage());
         return new ResponseEntity<>(apiError, new HttpHeaders(), apiError.getStatus());
     }
+    @ExceptionHandler({IllegalArgumentException.class})
+    protected ResponseEntity<Object> handleIllegalParameter(IllegalArgumentException exception, WebRequest request) {
+        ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, exception.getMessage());
+        return new ResponseEntity<>(apiError, new HttpHeaders(), apiError.getStatus());
+    }
+
+    @ExceptionHandler({Exception.class})
+    protected ResponseEntity<Object> handleGeneralException(Exception exception, WebRequest request) {
+        ApiError apiError = new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
+        return new ResponseEntity<>(apiError, new HttpHeaders(), apiError.getStatus());
+    }
 }

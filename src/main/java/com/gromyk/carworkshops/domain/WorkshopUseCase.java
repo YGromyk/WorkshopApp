@@ -3,29 +3,29 @@ package com.gromyk.carworkshops.domain;
 import com.gromyk.carworkshops.domain.entities.WorkshopSave;
 import com.gromyk.carworkshops.persistence.entities.Workshop;
 import com.gromyk.carworkshops.persistence.repository.WorkshopsRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class WorkshopUseCase {
+    private final ModelMapper mapper;
     private final WorkshopsRepository workshopsRepository;
 
     @Autowired
-    public WorkshopUseCase(WorkshopsRepository workshopsRepository) {
+    public WorkshopUseCase(ModelMapper mapper, WorkshopsRepository workshopsRepository) {
+        this.mapper = mapper;
         this.workshopsRepository = workshopsRepository;
     }
 
     public Workshop saveWorkshop(WorkshopSave workshopSave) {
-        Workshop workshop = new Workshop();
-        workshop.setId(workshopSave.getId());
-        workshop.setName(workshopSave.getName());
-        workshop.setDescription(workshopSave.getDescription());
-        workshop.setMaximumParallelServices(workshopSave.getMaximumParallelServices());
-        workshop.setStartOfADay(workshopSave.getStartOfADay());
-        workshop.setEndOfADay(workshopSave.getEndOfADay());
+        if(workshopsRepository.findById(workshopSave.getId()).isPresent()) {
+            throw new IllegalArgumentException("Workshop with such id already exists; id =  " + workshopSave.getId());
+        }
+
+        Workshop workshop = mapper.map(workshopSave, Workshop.class);
         return workshopsRepository.save(workshop);
     }
 

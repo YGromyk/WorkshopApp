@@ -37,7 +37,7 @@ public class AppointmentController {
             @PathVariable(value = "workshopId") String workshopId,
             @RequestBody AppointmentRequest appointmentRequest
     ) {
-        return getAppointmentDTO(createAppointmentUseCase.createAppointment(workshopId, appointmentRequest));
+        return modelMapper.map(createAppointmentUseCase.createAppointment(workshopId, appointmentRequest), AppointmentDTO.class);
     }
 
     @RequestMapping(value = "/werkstatt/{workshopId}/termine", method = RequestMethod.GET)
@@ -48,15 +48,10 @@ public class AppointmentController {
             @RequestParam(name = "bis", required = false) @DateTimeFormat(pattern = DateHelper.DATE_FORMAT) LocalDateTime untilTime
     ) {
         return filterAppointmentsUseCase.run(workshop, serviceId, fromTime, untilTime).stream()
-                .map(this::getAppointmentDTO)
+                .map(it -> modelMapper.map(it, AppointmentDTO.class))
                 .toList();
     }
 
-    private AppointmentDTO getAppointmentDTO(Appointment it) {
-        AppointmentDTO mapped = modelMapper.map(it, AppointmentDTO.class);
-        mapped.setServiceCode(it.getServiceToDo().getServiceName());
-        return mapped;
-    }
 
     @RequestMapping(value = "/werkstatt/{workshopId}/termin/{terminId}", method = RequestMethod.GET)
     public AppointmentDTO remove(
@@ -68,7 +63,7 @@ public class AppointmentController {
         if (appointmentToRemove.getWorkshopId().equals(workshop)) {
             repository.delete(appointmentToRemove);
         }
-        return getAppointmentDTO(appointmentToRemove);
+        return modelMapper.map(appointmentToRemove, AppointmentDTO.class);
     }
 
     @RequestMapping(value = "/werkstatt/{workshopId}/terminvorschlag", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -81,12 +76,7 @@ public class AppointmentController {
             @DateTimeFormat(pattern = DateHelper.DATE_FORMAT) LocalDateTime untilTime
     ) {
         return createAppointmentUseCase.getRecommendation(workshop, serviceId, fromTime, untilTime).stream()
-                .map(it -> {
-                    AppointmentRecommendation mapped = modelMapper.map(it, AppointmentRecommendation.class);
-                    mapped.setServiceCode(it.getService().getServiceName());
-                    mapped.setService(it.getService().getDescription());
-                    return mapped;
-                })
+                .map(it -> modelMapper.map(it, AppointmentRecommendation.class))
                 .toList();
     }
 }

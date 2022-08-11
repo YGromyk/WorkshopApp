@@ -23,6 +23,9 @@ private final  WorkshopsRepository workshopsRepository;
 
     public Service addServiceFor(String workshopId, ServiceSave serviceSave) {
         Workshop workshop = workshopsRepository.findById(workshopId).orElseThrow();
+        if (servicesRepository.findByWorkshopAndServiceName(workshop, serviceSave.getServiceName()) != null) {
+            throw new IllegalArgumentException("Service with this id already exists!");
+        }
         Service service = modelMapper.map(serviceSave, Service.class);
         service.setWorkshop(workshop);
         return servicesRepository.save(service);

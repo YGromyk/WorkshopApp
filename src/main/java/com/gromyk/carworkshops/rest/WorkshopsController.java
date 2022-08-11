@@ -4,11 +4,14 @@ import com.gromyk.carworkshops.domain.ServiceUseCase;
 import com.gromyk.carworkshops.domain.WorkshopUseCase;
 import com.gromyk.carworkshops.domain.entities.ServiceSave;
 import com.gromyk.carworkshops.domain.entities.WorkshopSave;
+import com.gromyk.carworkshops.persistence.entities.Workshop;
 import com.gromyk.carworkshops.rest.dtos.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController()
 public class WorkshopsController {
@@ -23,7 +26,7 @@ public class WorkshopsController {
         this.modelMapper = modelMapper;
     }
 
-    @PostMapping(path = "/werkstatt",consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = "/werkstatt", consumes = MediaType.APPLICATION_JSON_VALUE)
     public WorkshopDTO createWorkshop(@RequestBody WorkshopCreateRequest createRequest) {
         WorkshopSave workshopSave = modelMapper.map(createRequest, WorkshopSave.class);
         return modelMapper.map(workshopUseCase.saveWorkshop(workshopSave), WorkshopDTO.class);
@@ -36,7 +39,13 @@ public class WorkshopsController {
         return modelMapper.map(workshopUseCase.getWorkshopById(workshop), WorkshopDTO.class);
     }
 
-    @PostMapping(path = "/werkstatt/{workshopId}/leistung",consumes = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/werkstatte", method = RequestMethod.GET)
+    public List<WorkshopDTO> getAllWorkshops(
+    ) {
+        return workshopUseCase.getAllWorkshops().stream().map(it -> modelMapper.map(it, WorkshopDTO.class)).toList();
+    }
+
+    @PostMapping(path = "/werkstatt/{workshopId}/leistung", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ServiceDTO addService(@PathVariable(value = "workshopId") String workshopId,
                                  @RequestBody ServiceDTO serviceDTO
     ) {

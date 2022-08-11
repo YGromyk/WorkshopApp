@@ -112,6 +112,8 @@ public class CreateAppointmentUseCase {
         if (to == null) {
             to = from.withHour(workshop.getEndOfADay().getHour());
             to = to.withMinute(workshop.getEndOfADay().getMinute());
+            to = to.withSecond(0);
+            to = to.withNano(0);
         }
         if (isTimeOutBusinessHours(from.toLocalTime(), to.toLocalTime(), workshop)) {
             from = from.withHour(workshop.getStartOfADay().getHour());
